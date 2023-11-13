@@ -1,115 +1,159 @@
 <!DOCTYPE html>
 <html>
-
-<head>
+  <head>
     <title>Socket.IO chat</title>
     <style>
-        body {
-            margin: 0;
-            padding-bottom: 3rem;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
+      body {
+        margin: 0;
+        padding-bottom: 3rem;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+      }
 
-        #form {
-            background: rgba(0, 0, 0, 0.15);
-            padding: 0.25rem;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            height: 3rem;
-            box-sizing: border-box;
-            backdrop-filter: blur(10px);
-        }
+      #form {
+        background: rgba(0, 0, 0, 0.15);
+        padding: 0.25rem;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        height: 3rem;
+        box-sizing: border-box;
+        backdrop-filter: blur(10px);
+      }
 
-        #input {
-            border: none;
-            padding: 0 1rem;
-            flex-grow: 1;
-            border-radius: 2rem;
-            margin: 0.25rem;
-        }
+      #input {
+        border: none;
+        padding: 0 1rem;
+        flex-grow: 1;
+        border-radius: 2rem;
+        margin: 0.25rem;
+      }
 
-        #input:focus {
-            outline: none;
-        }
+      #input:focus {
+        outline: none;
+      }
 
-        #form>button {
-            background: #333;
-            border: none;
-            padding: 0 1rem;
-            margin: 0.25rem;
-            border-radius: 3px;
-            outline: none;
-            color: #fff;
-        }
+      #form > button {
+        background: #333;
+        border: none;
+        padding: 0 1rem;
+        margin: 0.25rem;
+        border-radius: 3px;
+        outline: none;
+        color: #fff;
+      }
 
-        #messages {
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-        }
+      #messages {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+      }
 
-        #messages>li {
-            padding: 0.5rem 1rem;
-        }
+      #messages > li {
+        padding: 0.5rem 1rem;
+      }
 
-        #messages>li:nth-child(odd) {
-            background: #efefef;
-        }
+      #messages > li:nth-child(odd) {
+        background: #efefef;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <ul id="messages"></ul>
     <form id="form" action="">
-        <input id="input" autocomplete="off" /><button>Send</button>
+      <input id="input" autocomplete="off" /><button>Send</button>
+      <p id="typingStatus"></p>
     </form>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
+      const socket = io();
 
-        //capturar el nombre del usuario
-        const nicknameInput = prompt('Ingrese su nombre');
+      //funcion para capturar el nombre del usuario
+      function obtenerNombre() {
+        const nombre = prompt("Ingrese su nombre");
+        return nombre || obtenerNombre(); // Si el nombre está vacío, vuelve a pedirlo
+      }
+      // variables globales
+      const nicknameInput = obtenerNombre();
 
-        const form = document.getElementById('form');
-        const input = document.getElementById('input');
+      const form = document.getElementById("form");
+      const input = document.getElementById("input");
+      const typingStatus = document.querySelector("#typingStatus");
 
-        const agregarMensaje = (data) => {
-            const item = document.createElement('li');
-            item.textContent = data;
-            messages.appendChild(item);
-            window.scrollTo(0, document.body.scrollHeight);
+      // funcion para mostrar en pantalla los mensajes
+      const agregarMensaje = (data) => {
+        const item = document.createElement("li");
+        item.textContent = data;
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+      };
+
+      // Manejar el evento de "usuario está escribiendo"
+      input.addEventListener("input", () => {
+        socket.emit("typing", nicknameInput);
+      });
+
+      // Manejar el evento de "usuario está escribiendo"
+      socket.on("typing", (username) => {
+        typingStatus.textContent = username + " está escribiendo...";
+      });
+
+      // Manejar el evento de dejar de escribir
+      socket.on("stop typing", () => {
+        typingStatus.textContent = "";
+      });
+
+      socket.on("mensajes", (mensajes) => {
+        mensajes.forEach((e) => {
+          agregarMensaje(e);
+        });
+      });
+
+      socket.emit("user connected", nicknameInput); // Envía el evento 'user connected' con el nombre del usuario
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (input.value && nicknameInput) {
+          socket.emit("chat message", {
+            nickname: nicknameInput,
+            message: input.value,
+          });
+
+          //muestra el mensaje del usuario que lo mando sin tener que recibirlo de vuelta
+          agregarMensaje(
+            `${obtenerHoraActual()} | ${nicknameInput}: ${input.value}`
+          );
+
+          input.value = "";
         }
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
-            if (input.value && nicknameInput) {
-                socket.emit('chat message', { nickname: nicknameInput, message: input.value });
+      });
 
-                //muestra el mensaje del usuario que lo mando sin tener que recibirlo de vuelta
-                agregarMensaje(`${nicknameInput}: ${input.value}`)
+      socket.on("chat message", function (data) {
+        agregarMensaje(data);
+        socket.emit("stop typing");
+      });
 
-                input.value = '';
-            }
-        });
-        socket.on('chat message', function (msg) {
-            agregarMensaje(msg)
-        });
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          form.dispatchEvent(new Event("submit"));
+        }
+      });
+      function obtenerHoraActual() {
+        const date = new Date();
 
-        socket.on('ALLmsg', data => {
-            data.map(msg => {
-                agregarMensaje(msg);
-            })
-        })
+        const dia = date.getDate();
+        const mes = date.getMonth() + 1;
+        const year = date.getFullYear();
 
-        input.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                form.dispatchEvent(new Event('submit'));
-            }
-        });
+        const horas = date.getHours().toString().padStart(2, "0");
+        const minutos = date.getMinutes().toString().padStart(2, "0");
+        const segundos = date.getSeconds().toString().padStart(2, "0");
+        return `${year}/${mes}/${dia} ${horas}:${minutos}:${segundos}`;
+      }
     </script>
-</body>
-
+  </body>
 </html>
