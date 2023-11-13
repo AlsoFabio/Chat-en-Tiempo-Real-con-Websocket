@@ -86,11 +86,11 @@ io.on("connection", (socket) => {
   traerMensajes().then((mensajesFormateados) => {
     socket.emit("mensajes", mensajesFormateados);
   });
-  let UsuarioActual = ''
+  let UsuarioActual = "";
   // Nuevo usuario conectandose
   socket.on("user connected", async (nickname) => {
-    const welcomeMessage = `Usuario ${nickname} se ha conectado`;
-    UsuarioActual= nickname;
+    const welcomeMessage = `El usuario ${nickname} se ha conectado`;
+    UsuarioActual = nickname;
     // Guarda el mensaje en la base de datos
     const mensaje = new Mensaje({
       texto: welcomeMessage,
@@ -128,20 +128,23 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("stop typing");
   });
 
-  socket.on("disconnect", async() => {
-    const mensaje = await Mensaje.findOne({ usuario: UsuarioActual })
+  socket.on("disconnect", async () => {
+    const mensaje = await Mensaje.findOne({ usuario: UsuarioActual });
 
-    const despedida = `Se desconecto ${mensaje.usuario}`
+    const despedida = `El usuario ${mensaje?.usuario} se ha desconectado`;
 
     const newMensaje = new Mensaje({
       texto: despedida,
-      usuario: mensaje.nickname,
+      usuario: mensaje?.usuario,
       fecha: obtenerHoraActual(),
     });
 
     await newMensaje.save(); // Guarda el mensaje en la base de datos
 
-    socket.broadcast.emit("chat message",`${obtenerHoraActual()} | ${despedida}`);
+    socket.broadcast.emit(
+      "chat message",
+      `${obtenerHoraActual()} | ${despedida}`
+    );
   });
 });
 
