@@ -1,52 +1,3 @@
-// const express = require('express');
-// const app = express();
-// const http = require('http');
-// const server = http.createServer(app);
-// const { Server } = require("socket.io");
-// const io = new Server(server);
-
-// const connectDB = require('./db.js')
-
-// connectDB()
-
-// const mensajes = []
-
-// app.get('/', (req, res) => {
-//     res.sendFile(__dirname + '/index.html');
-// });
-
-// io.on('connection', (socket) => {
-//     console.log(socket.id);
-
-//     //Eventos en escucha
-//     socket.on('user connected', (nickname) => {
-//         const welcomeMessage = `Usuario ${nickname} se ha conectado`;
-//         mensajes.push(welcomeMessage);//cambiar cuando se agrege la persistencia de datos
-//         io.emit('chat message', welcomeMessage); // Envía el mensaje a todos los clientes
-//     });
-
-//     socket.emit('ALLmsg', mensajes);
-
-//     socket.on('chat message',data =>{
-
-//         mensajes.push(`${data.nickname}: ${data.message}`);
-//         socket.broadcast.emit('chat message',`${data.nickname}: ${data.message}`);
-//         console.log(mensajes);
-
-//     })
-
-//     socket.on('ALLmsg',data =>{
-//         io.emit('ALLmsg',data);
-//     })
-
-//     socket.on('disconnect', () => {
-//         // console.log(`Usuario desconectado: ${socket.id}`);
-//       });
-// });
-
-// server.listen(3000, () => {
-//     console.log('listening on *:3000');
-// });
 
 const express = require("express");
 const app = express();
@@ -55,7 +6,7 @@ const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
 const connectDB = require("./db.js");
-const { Mensaje } = require("./model-mensaje.js"); // Importa el modelo Mensaje
+const { Mensaje } = require('./models/model-mensaje.js') // Importa el modelo Mensaje
 
 connectDB();
 

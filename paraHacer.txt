@@ -1,0 +1,11 @@
+    user model
+username: string
+password: string
+online: boolean
+timestamps: true
+
+    Mensaje model
+from: schema.types.objectid:user
+to: schema.types.objectid:user
+message: string
+timestamps: true
